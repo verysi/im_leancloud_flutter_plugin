@@ -2,6 +2,8 @@
 
 im flutter plugin for leancloud.
 
+Only support Android!!!
+
 ## Getting Started
 
 This project is a starting point for a Flutter

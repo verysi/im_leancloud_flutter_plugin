@@ -1,6 +1,6 @@
-# im_leancloud_plugin
+# im_leancloud_flutter_plugin
 
-im plugin for leancloud.
+im flutter plugin for leancloud.
 
 ## Getting Started
 

@@ -1,0 +1,51 @@
+group 'com.sisi.imleancloudplugin'
+version '1.0-SNAPSHOT'
+
+buildscript {
+    repositories {
+        google()
+        jcenter()
+        maven {
+            url "http://mvn.leancloud.cn/nexus/content/repositories/public"
+        }
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.2.1'
+    }
+}
+
+rootProject.allprojects {
+    repositories {
+        google()
+        jcenter()
+        maven {
+            url "http://mvn.leancloud.cn/nexus/content/repositories/public"
+        }
+
+    }
+}
+
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 27
+
+    defaultConfig {
+        minSdkVersion 16
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    lintOptions {
+        disable 'InvalidPackage'
+    }
+}
+dependencies {
+    implementation ('com.android.support:support-v4:27.1.1')
+    implementation 'de.greenrobot:eventbus:2.4.0'
+
+    // LeanCloud 基础包
+    implementation ('cn.leancloud.android:avoscloud-sdk:4.7.9')
+
+    // 推送与即时通讯需要的包
+    implementation ('cn.leancloud.android:avoscloud-push:4.7.9@aar'){transitive = true}
+}

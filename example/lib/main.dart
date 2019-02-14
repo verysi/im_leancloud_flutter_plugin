@@ -10,7 +10,6 @@ import 'sql/sql.dart';
 import 'sql/message.dart';
 import 'login.dart';
 import 'contact.dart';
-import 'chat.dart';
 
 void main() {
   _islogin().then((onValue) {

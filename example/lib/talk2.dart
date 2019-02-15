@@ -4,8 +4,12 @@ import 'sql/conversation.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'sql/sqlconversation.dart';
+import 'sql/message.dart';
+import 'refresh_list_view.dart';
 import 'package:im_leancloud_plugin/im_leancloud_plugin.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class talk2 extends StatefulWidget {
   String conversationId;
@@ -58,9 +62,25 @@ class talk2State extends State<talk2> {
         if (widget.conversationId == message['conversationId'] && isopendTalk) {
           conversationRead();
         }
+        String content = json.decode(message['content'])['_lctext'];
+        Message onReceiveMessage =
+            new Message(content, message['getfrom'], message['conversationId']);
+        _showNotification(message['getfrom'], content);
         saveNewconversation(message['conversationId'], message['getfrom']);
       },
     );
+  }
+
+  Future _showNotification(String getfrom, String content) async {
+    var flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
+    var androidPlatformChannelSpecifics = new AndroidNotificationDetails(
+        'your channel id', 'your channel name', 'your channel description',
+        importance: Importance.Max, priority: Priority.High);
+    var iOSPlatformChannelSpecifics = new IOSNotificationDetails();
+    var platformChannelSpecifics = new NotificationDetails(
+        androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
+    await flutterLocalNotificationsPlugin
+        .show(0, getfrom, content, platformChannelSpecifics, payload: 'item x');
   }
 
   Future<void> sendText(String content, String conversationId) async {
@@ -83,6 +103,7 @@ class talk2State extends State<talk2> {
       steamlist();
     }
     steamlist();
+    i = 1;
   }
 
   void conversationRead() {
@@ -91,14 +112,14 @@ class talk2State extends State<talk2> {
   }
 
   Future<void> steamlist() async {
-    messages = await getMessage();
+    messages = await getMessage(1);
     _streamController.sink.add(messages);
   }
 
-  Future<List<dynamic>> getMessage() async {
+  Future<List<dynamic>> getMessage(int page) async {
     ImLeancloudPlugin ImleancloudPlugin = ImLeancloudPlugin.getInstance();
-    String listmessages =
-        await ImleancloudPlugin.queryUnreadMessages(widget.conversationId, 10);
+    String listmessages = await ImleancloudPlugin.queryUnreadMessages(
+        widget.conversationId, 10 * page);
     print(listmessages);
     List<dynamic> mapmessages = json.decode(listmessages);
     if (mapmessages.length == 0) {
@@ -118,9 +139,20 @@ class talk2State extends State<talk2> {
     return Future.value(false);
   }
 
-  Future inittalk() async {
+  Future<void> inittalk() async {
     await getConversationId(widget.username);
     conversationRead();
+  }
+
+  int i = 1;
+  Future<void> _refresh() async {
+    if (messages.length < i * 10) {
+      print('已经拉到最顶');
+    } else {
+      i = i + 2; //下拉加载20条数据
+      messages = await getMessage(i);
+      _streamController.sink.add(messages);
+    }
   }
 
   @override
@@ -264,13 +296,20 @@ class talk2State extends State<talk2> {
               // ),
             );
           } else {
-            return ListView.builder(
-              padding: EdgeInsets.all(10.0),
-              itemBuilder: (context, index) => buildItem(
-                  index, snapshot.data[snapshot.data.length - index - 1]),
-              itemCount: snapshot.data.length,
-              reverse: true,
-              controller: listScrollController,
+            return RefreshListView(
+              onRefreshCallback: () {},
+              loadMoreCallback: _refresh,
+              listView: ListView.builder(
+                padding: EdgeInsets.all(10.0),
+                itemBuilder: (context, index) => buildItem(
+                    index, snapshot.data[snapshot.data.length - index - 1]),
+                // itemBuilder: (context, index) =>
+                //   buildItem(index, snapshot.data[index]),
+
+                itemCount: snapshot.data.length,
+                reverse: true,
+                controller: listScrollController,
+              ),
             );
           }
         },

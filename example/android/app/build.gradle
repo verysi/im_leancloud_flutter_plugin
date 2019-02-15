@@ -60,10 +60,8 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     implementation ('com.android.support:support-v4:27.1.1')
     implementation 'de.greenrobot:eventbus:2.4.0'
-
     // LeanCloud 基础包
     implementation ('cn.leancloud.android:avoscloud-sdk:4.7.9')
-
     // 推送与即时通讯需要的包
     implementation ('cn.leancloud.android:avoscloud-push:4.7.9@aar'){transitive = true}
 }

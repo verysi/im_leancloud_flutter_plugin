@@ -1,3 +1,4 @@
+//使用自建的消息缓存，详情查看sql文件夹。
 import 'package:flutter/material.dart';
 import 'sql/conversation.dart';
 import 'dart:convert';

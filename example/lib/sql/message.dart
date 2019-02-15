@@ -3,6 +3,7 @@ class Message {
   String conversationId;
   String messagefrom;
   String messageId;
+  String MessageStatus;//枚举：
   int id;
   int timestamp;
   int deliveredAt;
@@ -14,6 +15,7 @@ class Message {
     this.content = obj['content'];
     this.messagefrom = obj['messagefrom'];
     this.conversationId = obj['conversationId'];
+    this.MessageStatus=obj['MessageStatus'];
   }
 
   Map<String, dynamic> toMap() {
@@ -21,6 +23,7 @@ class Message {
     map['content'] = this.content;
     map['messagefrom'] = this.messagefrom;
     map['conversationId'] = this.conversationId;
+    map['MessageStatus']=this.MessageStatus;
     return map;
   }
 

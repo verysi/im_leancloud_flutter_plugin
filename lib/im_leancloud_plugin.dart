@@ -58,13 +58,13 @@ class ImLeancloudPlugin {
     return conversationId;
   }
 
-  void sendText(String content, String conversationId) {
+  Future<String> sendText(String content, String conversationId)async{
     var args = <String, dynamic>{
       'content': content,
       'conversationId': conversationId,
     };
-
-    _channel.invokeMethod('sendText', args);
+    String sendresult = await _channel.invokeMethod('sendText', args);
+    return sendresult;
   }
 
   void sendImage(String imagePath, String conversationId) {
@@ -136,16 +136,16 @@ class ImLeancloudPlugin {
   }
 
   EventHandler _onReceiveMessage;
-  EventHandler _unReadMessages;
+  EventHandler _onConnectionResume;
   EventHandler _unRead;
 
   void addEventHandler({
     EventHandler onReceiveMessage,
-    EventHandler unReadMessages,
+    EventHandler onConnectionResume,
     EventHandler unRead,
   }) {
     _onReceiveMessage = onReceiveMessage;
-    _unReadMessages = unReadMessages;
+    _onConnectionResume = onConnectionResume;
     _unRead = unRead;
   }
 
@@ -156,8 +156,8 @@ class ImLeancloudPlugin {
       case 'onReceiveMessage':
         return _onReceiveMessage(call.arguments.cast<String, dynamic>());
         break;
-      case 'unReadMessages':
-        return _unReadMessages(call.arguments.cast<bool>());
+      case 'onConnectionResume':
+        return _onConnectionResume(call.arguments.cast<bool>());
         break;
       case 'unRead':
         print("调用 ${call.method}");

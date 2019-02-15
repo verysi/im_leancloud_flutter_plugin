@@ -5,7 +5,7 @@ import 'sql/sqlconversation.dart';
 import 'sql/message.dart';
 import 'sql/sql.dart';
 import 'dart:async';
-import 'talk.dart';
+import 'talk2.dart';
 import 'login.dart';
 import 'package:im_leancloud_plugin/im_leancloud_plugin.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -88,7 +88,7 @@ class contactState extends State<contact> {
         print(res);
       },
       //网络状态重新连接
-      unReadMessages: (isResume) async {
+      onConnectionResume: (isResume) async {
         print(isResume);
       },
       //未读消息状态发生变化
@@ -264,7 +264,7 @@ class contactState extends State<contact> {
               context,
               MaterialPageRoute(
                   builder: (context) =>
-                      talk(detail['conversationId'], detail['username'])));
+                      talk2(detail['conversationId'], detail['username'])));
         }
         //pageroute(detail['conversationId'], detail['username']),
         );

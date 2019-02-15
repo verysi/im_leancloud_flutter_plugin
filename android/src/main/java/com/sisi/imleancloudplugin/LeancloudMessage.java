@@ -195,7 +195,7 @@ public class LeancloudMessage {
         String content = LeancloudArgsConverter.getStringValue(call, result, "content");
         String conversationId = LeancloudArgsConverter.getStringValue(call, result, "conversationId");
         message.setText(content);
-        sendMessage(message, conversationId);
+        sendMessage(message, conversationId,result);
     }
 
     /**
@@ -209,7 +209,7 @@ public class LeancloudMessage {
         String conversationId = LeancloudArgsConverter.getStringValue(call, result, "conversationId");
 
         try {
-            sendMessage(new AVIMImageMessage(imagePath), conversationId);
+            sendMessage(new AVIMImageMessage(imagePath), conversationId,result);
         } catch (IOException e) {
             LCIMLogUtils.logException(e);
         }
@@ -225,14 +225,14 @@ public class LeancloudMessage {
         String conversationId = LeancloudArgsConverter.getStringValue(call, result, "conversationId");
         try {
             AVIMAudioMessage audioMessage = new AVIMAudioMessage(audioPath);
-            sendMessage(audioMessage, conversationId);
+            sendMessage(audioMessage, conversationId,result);
         } catch (IOException e) {
             LCIMLogUtils.logException(e);
         }
     }
 
-    static void sendMessage(AVIMMessage message, String conversationId) {
-        sendMessage(message, true, conversationId);
+    static void sendMessage(AVIMMessage message, String conversationId,MethodChannel.Result result) {
+        sendMessage(message, true, conversationId,result);
     }
 
     /**
@@ -240,7 +240,7 @@ public class LeancloudMessage {
      *
      * @param message
      */
-    static void sendMessage(AVIMMessage message, boolean addToList, String conversationId) {
+    static void sendMessage(AVIMMessage message, boolean addToList, String conversationId, final MethodChannel.Result result) {
         AVIMMessageOption option = new AVIMMessageOption();
         option.setReceipt(true);
         AVIMConversation avConversation = LCChatKit.getInstance().getClient().getConversation(conversationId);
@@ -248,9 +248,13 @@ public class LeancloudMessage {
             @Override
             public void done(AVIMException e) {
                 System.out.println("消息发送成功");
+                result.success("sendsuccess");
+
+
                 if (null != e) {
                     LCIMLogUtils.logException(e);
                     System.out.println("消息发送失败");
+                    result.success("sendfail");
                 }
             }
         });

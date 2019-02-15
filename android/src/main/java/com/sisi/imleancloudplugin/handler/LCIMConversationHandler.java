@@ -48,6 +48,7 @@ public class LCIMConversationHandler extends AVIMConversationEventHandler {
   public void onLastDeliveredAtUpdated(AVIMClient client, AVIMConversation conversation) {
     LCIMConversationReadStatusEvent event = new LCIMConversationReadStatusEvent();
     event.conversationId = conversation.getConversationId();
+
   }
 
   @Override
@@ -57,6 +58,9 @@ public class LCIMConversationHandler extends AVIMConversationEventHandler {
     System.out.println(conversation.getLastReadAt());
     LCIMConversationReadStatusEvent event = new LCIMConversationReadStatusEvent();
     event.conversationId = conversation.getConversationId();
+
+
+
   }
 
   @Override
@@ -78,10 +82,12 @@ public class LCIMConversationHandler extends AVIMConversationEventHandler {
 
   @Override
   public void onMessageRecalled(AVIMClient client, AVIMConversation conversation, AVIMMessage message) {
+
   }
 
   @Override
   public void onMessageUpdated(AVIMClient client, AVIMConversation conversation, AVIMMessage message) {
+
   }
 
 }

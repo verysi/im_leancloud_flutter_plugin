@@ -52,7 +52,7 @@ public class LCIMClientEventHandler extends AVIMClientEventHandler {
   @Override
   public void onConnectionResume(AVIMClient avimClient) {
     //setConnectAndNotify(true);
-    ImLeancloudPlugin.instance.channel.invokeMethod("unReadMessages",true);
+    ImLeancloudPlugin.instance.channel.invokeMethod("onConnectionResume",true);
 
   }
 

@@ -4,11 +4,14 @@ package com.sisi.imleancloudplugin;
  * Created by ruirui on 2019/1/28.
  */
 
+import android.util.Log;
+
 import com.alibaba.fastjson.JSON;
 import com.avos.avoscloud.AVCallback;
 import com.avos.avoscloud.AVException;
 import com.avos.avoscloud.im.v2.AVIMClient;
 import com.avos.avoscloud.im.v2.AVIMConversation;
+import com.avos.avoscloud.im.v2.AVIMConversationsQuery;
 import com.avos.avoscloud.im.v2.AVIMException;
 import com.avos.avoscloud.im.v2.AVIMMessage;
 import com.avos.avoscloud.im.v2.AVIMMessageOption;
@@ -16,6 +19,7 @@ import com.avos.avoscloud.im.v2.AVIMTemporaryConversation;
 import com.avos.avoscloud.im.v2.callback.AVIMClientCallback;
 import com.avos.avoscloud.im.v2.callback.AVIMConversationCallback;
 import com.avos.avoscloud.im.v2.callback.AVIMConversationCreatedCallback;
+import com.avos.avoscloud.im.v2.callback.AVIMConversationQueryCallback;
 import com.avos.avoscloud.im.v2.callback.AVIMMessagesQueryCallback;
 import com.avos.avoscloud.im.v2.messages.AVIMAudioMessage;
 import com.avos.avoscloud.im.v2.messages.AVIMImageMessage;
@@ -39,6 +43,7 @@ import io.flutter.plugin.common.MethodChannel;
 public class LeancloudMessage {
     protected static AVIMConversation imConversation;
     private static LeancloudMessage leancloudmessage;
+   // private static AVIMMessage oldmessage;
 
     private LeancloudMessage() {
 
@@ -56,8 +61,9 @@ public class LeancloudMessage {
         messagemap.put("conversationId", message.getConversationId());
         messagemap.put("content", message.getContent());
         messagemap.put("getfrom", message.getFrom());
-        System.out.println(message.getMessageStatus());
-        messagemap.put("MessageStatus",message.getMessageStatus());
+        messagemap.put("MessageStatus", message.getMessageStatus());
+        messagemap.put("MessageId", message.getMessageId());
+        messagemap.put("Timestamp", message.getTimestamp());
         return messagemap;
     }
 
@@ -81,21 +87,23 @@ public class LeancloudMessage {
 
 
     static void getConversation(MethodCall call, final MethodChannel.Result result) {
+        final String currentUser = LeancloudArgsConverter.getStringValue(call, result, "currentUser");
         final String memberId = LeancloudArgsConverter.getStringValue(call, result, "username");
         LCChatKit.getInstance().getClient().open(new AVIMClientCallback() {
             @Override
             public void done(AVIMClient client, AVIMException e) {
                 if (e == null) {
                     client.createConversation(
-                            Arrays.asList(memberId), "", null, false, true, new AVIMConversationCreatedCallback() {
+                            Arrays.asList(memberId), "[" + currentUser + "," + memberId + "]", null, false, true, new AVIMConversationCreatedCallback() {
                                 @Override
                                 public void done(AVIMConversation avimConversation, AVIMException e) {
                                     if (null != e) {
                                         System.out.println(e.getMessage());
                                     } else {
+                                        //updateConversation(avimConversation);
                                         LeancloudMessage.getInstance().imConversation = avimConversation;
                                         result.success(avimConversation.getConversationId());
-                                        //updateConversation(avimConversation);
+
                                     }
                                 }
                             });
@@ -118,10 +126,58 @@ public class LeancloudMessage {
                         LCIMLogUtils.logException(e);
                     } else {
                         //initActionBar(s);
+
                     }
                 }
             });
         }
+    }
+
+    public static void conversationList(MethodCall call, final MethodChannel.Result result) {
+        final String currentUser = LeancloudArgsConverter.getStringValue(call, result, "currentUser");
+        AVIMClient cUser = AVIMClient.getInstance(currentUser);
+        cUser.open(new AVIMClientCallback() {
+            @Override
+            public void done(AVIMClient client, AVIMException e) {
+                if (e == null) {//登录成功
+                    AVIMConversationsQuery query = client.getConversationsQuery();
+                    query.limit(20);
+                    query.findInBackground(new AVIMConversationQueryCallback() {
+                        @Override
+                        public void done(List<AVIMConversation> convs, AVIMException e) {
+                            if (e == null) {
+                                //convs就是获取到的conversation列表
+                                //注意：按每个对话的最后更新日期（收到最后一条消息的时间）倒序排列
+                                result.success(LeancloudMessage.jsonconversationList(convs));
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    public static String jsonconversationList(List<AVIMConversation> convs) {
+        List<Map<String, Object>> conversationmaps = new ArrayList<>();
+        int conversationLength = convs.size();
+        if (conversationLength > 0) {
+            for (int i = 0; i < conversationLength; i++) {
+                conversationmaps.add(conversationToMap(convs.get(i)));
+
+            }
+        } else {
+            conversationmaps = null;
+        }
+        String jsonconversation = JSON.toJSONString(conversationmaps);
+        return jsonconversation;
+    }
+
+    public static Map<String, Object> conversationToMap(AVIMConversation conv) {
+        Map<String, Object> convmap = new HashMap<>();
+        convmap.put("conversationId", conv.getConversationId());
+        convmap.put("getMembers", conv.getMembers());
+        convmap.put("getName", conv.getName());
+        return convmap;
     }
 
 
@@ -170,6 +226,25 @@ public class LeancloudMessage {
 
     }
 
+    static void queryHistoryMessages(MethodCall call, final MethodChannel.Result result) {
+        final String conversationId = LeancloudArgsConverter.getStringValue(call, result, "conversationId");
+        final String messageId = LeancloudArgsConverter.getStringValue(call, result, "messageId");
+        final long Timestamp = (long) call.argument("Timestamp");
+        final int pageSize = LeancloudArgsConverter.getIntValue(call, result, "pageSize");
+        final AVIMConversation conv = LCChatKit.getInstance().getClient().getConversation(conversationId);
+
+        conv.queryMessages(messageId, Timestamp, pageSize, new AVIMMessagesQueryCallback() {
+            @Override
+            public void done(List<AVIMMessage> nextPage, AVIMException e) {
+                // nextPage 下一页聊天记录
+                result.success(LeancloudMessage.MessagesToMaps(nextPage));
+
+            }
+        });
+
+
+    }
+
 
     /**
      * 拉取消息，必须加入 conversation 后才能拉取消息
@@ -195,7 +270,7 @@ public class LeancloudMessage {
         String content = LeancloudArgsConverter.getStringValue(call, result, "content");
         String conversationId = LeancloudArgsConverter.getStringValue(call, result, "conversationId");
         message.setText(content);
-        sendMessage(message, conversationId,result);
+        sendMessage(message, conversationId, result);
     }
 
     /**
@@ -209,7 +284,7 @@ public class LeancloudMessage {
         String conversationId = LeancloudArgsConverter.getStringValue(call, result, "conversationId");
 
         try {
-            sendMessage(new AVIMImageMessage(imagePath), conversationId,result);
+            sendMessage(new AVIMImageMessage(imagePath), conversationId, result);
         } catch (IOException e) {
             LCIMLogUtils.logException(e);
         }
@@ -225,14 +300,14 @@ public class LeancloudMessage {
         String conversationId = LeancloudArgsConverter.getStringValue(call, result, "conversationId");
         try {
             AVIMAudioMessage audioMessage = new AVIMAudioMessage(audioPath);
-            sendMessage(audioMessage, conversationId,result);
+            sendMessage(audioMessage, conversationId, result);
         } catch (IOException e) {
             LCIMLogUtils.logException(e);
         }
     }
 
-    static void sendMessage(AVIMMessage message, String conversationId,MethodChannel.Result result) {
-        sendMessage(message, true, conversationId,result);
+    static void sendMessage(AVIMMessage message, String conversationId, MethodChannel.Result result) {
+        sendMessage(message, true, conversationId, result);
     }
 
     /**

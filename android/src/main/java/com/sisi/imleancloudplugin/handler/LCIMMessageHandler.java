@@ -63,7 +63,8 @@ public class LCIMMessageHandler extends AVIMTypedMessageHandler<AVIMTypedMessage
         LCIMConversationItemCache.getInstance().insertConversation(message.getConversationId());
         if (!message.getFrom().equals(client.getClientId())) {
           System.out.println(message.getContent());
-          ImLeancloudPlugin.instance.onReceiveMessage(message.getConversationId(),message.getContent(),message.getFrom());
+          ImLeancloudPlugin.instance.onReceiveMessage(message);
+        //  message.getConversationId(),message.getContent(),message.getFrom(),message.getTimestamp()
           sendEvent(message, conversation);
         }
       }

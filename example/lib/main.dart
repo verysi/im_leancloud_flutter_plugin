@@ -1,55 +1,66 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter/services.dart';
 import 'package:im_leancloud_plugin/im_leancloud_plugin.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'sql/sqlconversation.dart';
 import 'sql/conversation.dart';
 import 'sql/sql.dart';
 import 'sql/message.dart';
 import 'login.dart';
 import 'contact.dart';
+import 'user.dart';
+//import 'contact2.dart';
 
 void main() {
-  _islogin().then((onValue) {
-    runApp(new MyApp(onValue));
-  });
-}
-
-Future<bool> _islogin() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  String currentUser = prefs.getString('currentUser');
-  if (currentUser == null) {
-    return false;
-  } else {
-    return true;
-  }
+  runApp(new MaterialApp(
+    title: 'LeanCloud 即时通讯',
+    theme: new ThemeData(
+      primarySwatch: Colors.blue,
+    ),
+    routes: <String, WidgetBuilder>{
+      '/contact': (BuildContext context) => contact(),
+      '/login': (BuildContext context) => LoginPage(),
+    },
+    home: new MyApp(),
+  ));
 }
 
 class MyApp extends StatefulWidget {
-  MyApp(this.landing);
-  final bool landing;
   @override
   _MyAppState createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
+  bool logined = false;
   String _platformVersion = 'Unknown';
   ImLeancloudPlugin ImleancloudPlugin = ImLeancloudPlugin.getInstance();
   sql db = new sql();
-  sqlConversation dbc = new sqlConversation();
+  ConversationSqlite dbc = new ConversationSqlite();
   var flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
 
   @override
   void initState() {
-    initApp();
     localNotification();
+    initApp();
     super.initState();
   }
 
+  Future _islogin() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String currentUser = prefs.getString('currentUser');
+    if (currentUser == null) {
+      Navigator.of(context).pushReplacementNamed('/login');
+    } else {
+      User.currentUser = currentUser;
+      logined = true;
+      await dbc.getcurrentUserConversation(currentUser);
+    }
+  }
+
+//这个和消息状态栏通知有关
   void localNotification() {
     var initializationSettingsAndroid =
         new AndroidInitializationSettings('app_icon');
@@ -61,6 +72,7 @@ class _MyAppState extends State<MyApp> {
         onSelectNotification: onSelectNotification);
   }
 
+//这个和消息状态栏通知有关
   Future _showNotification(String getfrom, String content) async {
     var androidPlatformChannelSpecifics = new AndroidNotificationDetails(
         'your channel id', 'your channel name', 'your channel description',
@@ -72,15 +84,20 @@ class _MyAppState extends State<MyApp> {
         .show(0, getfrom, content, platformChannelSpecifics, payload: 'item x');
   }
 
-  void onLoginClick() async {
-    if (widget.landing) {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String currentUser = prefs.getString('currentUser');
-      ImleancloudPlugin.onLoginClick(currentUser);
+  Future<void> onLoginClick() async {
+    if (logined) {
+      // await ImleancloudPlugin.onLoginClick(User.currentUser);
+      bool logining = await ImleancloudPlugin.onLoginClick(User.currentUser);
+      if (logining) {
+        User.isloginLcchat = true;
+      }
+      print('网络登陆状态：$logining');
+      Navigator.of(context).pushReplacementNamed('/contact');
     }
   }
 
   Future<void> initApp() async {
+    await _islogin();
     await initLeancloud();
     initPlatformState();
     onLoginClick();
@@ -96,47 +113,50 @@ class _MyAppState extends State<MyApp> {
     ImleancloudPlugin.conversationRead();
   }
 
+//保存新的会话
   Future<void> saveNewconversation(
       String conversationId, String username) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String currentUser = prefs.getString('currentUser');
     bool isconversationExist = await dbc.conversationExist(username);
     if (isconversationExist == false) {
       Conversation conversation =
-          new Conversation(currentUser, conversationId, username);
-      int res = await dbc.saveConversation(conversation);
-      print('会话列表数：$res');
+          new Conversation(User.currentUser, conversationId, username);
+      await dbc.insert(conversation);
     } else {
       print('会话已经存在');
     }
+    await dbc.close();
   }
 
-  Future<void> saveUnreadMessages(String listmessages) async {
-    List<dynamic> messages = json.decode(listmessages);
-    int length = messages.length;
-    if (length > 1) {
-      for (int i = 0; i < length; i++) {
-        if (messages[i]['MessageStatus'] == 'AVIMMessageStatusNone') {
-          String content = json.decode(messages[i]['content'])['_lctext'];
-          Message onReceiveMessage = new Message(
-              content, messages[i]['getfrom'], messages[i]['conversationId']);
-          _showNotification(messages[i]['getfrom'], content);
-          int res = await db.saveMessage(onReceiveMessage);
-          print(res);
-        }
-      }
-    } else if (length == 1) {
-      if (messages[0]['MessageStatus'] == 'AVIMMessageStatusNone') {
-        String content = json.decode(messages[0]['content'])['_lctext'];
-        Message onReceiveMessage = new Message(
-            content, messages[0]['getfrom'], messages[0]['conversationId']);
-        _showNotification(messages[0]['getfrom'], content);
-        int res = await db.saveMessage(onReceiveMessage);
-        print(res);
+  //获取接收过来的会话里对方用户名，只有两人会话的情况
+  String conversationName(List<dynamic> members) {
+    if (members.length > 1) {
+      if (User.currentUser == members[0]) {
+        return members[1];
+      } else {
+        return members[0];
       }
     } else {
-      print('没有未收消息');
+      return members[0];
     }
+  }
+
+//处理未读消息
+  Future<void> Unreadconversation(String jsonUnread) async {
+    Map<String, dynamic> mapUnread = json.decode(jsonUnread);
+    List<dynamic> members = mapUnread['getMembers'];
+    String username = conversationName(members);
+    String conversationId = mapUnread['conversationId'];
+    await saveNewconversation(conversationId, username);
+    _showNotification(username, '有未读消息');
+  }
+
+  //更新LastDelivered
+  Future<void> updateLastDelivered(String jsonLastDelivered) async {
+    Map<String, dynamic> mapLastdelivered = json.decode(jsonLastDelivered);
+    String conversationId = mapLastdelivered['conversationId'];
+    int LastDelivered = mapLastdelivered['LastDelivered'];
+    await dbc.updateLastDelivered(conversationId, LastDelivered);
+    dbc.close();
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
@@ -148,6 +168,7 @@ class _MyAppState extends State<MyApp> {
       ImleancloudPlugin.addEventHandler(
         //接收实时消息
         onReceiveMessage: (Map<String, dynamic> message) async {
+          print('这是main文件里面传来的消息');
           String content = json.decode(message['content'])['_lctext'];
           Message onReceiveMessage = new Message(
               content, message['getfrom'], message['conversationId']);
@@ -155,6 +176,9 @@ class _MyAppState extends State<MyApp> {
           int res = await db.saveMessage(onReceiveMessage);
           print(res);
           saveNewconversation(message['conversationId'], message['getfrom']);
+          await dbc.sequenceConversation(
+              message['conversationId'], message['Timestamp']);
+          dbc.close();
         },
         //网络状态重新连接
         onConnectionResume: (isResume) async {
@@ -162,14 +186,20 @@ class _MyAppState extends State<MyApp> {
         },
         //未读消息状态发生变化
         unRead: (Map<String, dynamic> unreadmessage) async {
-          int unreadcount = unreadmessage['unreadcount'];
-          String unReadConversationId = unreadmessage['conversationId'];
-          print('unreadcount:$unreadcount');
-          print('unReadConversationId:$unReadConversationId');
-          String messages = await ImleancloudPlugin.queryUnreadMessages(
-              unReadConversationId, unreadcount);
-          print(messages);
-          saveUnreadMessages(messages);
+          print(unreadmessage);
+          String jsonUnread = unreadmessage['unRead'];
+          await dbc.getcurrentUserConversation;
+          await Unreadconversation(jsonUnread);
+        },
+        onLastReadAtUpdated: (Map<String, dynamic> lastreadat) async {
+          print('更新最后读取时间');
+          print(lastreadat);
+        },
+        onLastDeliveredAtUpdated: (Map<String, dynamic> lastdeliver) async {
+          print('更新会话列表');
+          print(lastdeliver);
+          String jsonLastDelivered = lastdeliver['LastDeliveredAt'];
+          updateLastDelivered(jsonLastDelivered);
         },
       );
     } on PlatformException {
@@ -180,15 +210,15 @@ class _MyAppState extends State<MyApp> {
     // message was in flight, we want to discard the reply rather than calling
     // setState to update our non-existent appearance.
     if (!mounted) return;
-
-    setState(() {
-      _platformVersion = platformVersion;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: widget.landing ? contact() : LoginPage());
+    return Scaffold(
+      body: Center(
+        child: Image.asset('assets/images/start.png'),
+      ),
+    );
   }
 
   Future onSelectNotification(String payload) async {

@@ -2,6 +2,10 @@ package com.sisi.imleancloudplugin;
 
 import android.content.Context;
 
+import com.alibaba.fastjson.JSON;
+import com.avos.avoscloud.im.v2.AVIMConversation;
+import com.avos.avoscloud.im.v2.AVIMTypedMessage;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,12 +34,10 @@ public class ImLeancloudPlugin implements MethodCallHandler {
     public static ImLeancloudPlugin instance;
     private final Registrar registrar;
     public final MethodChannel channel;
-    //public final Map<Integer, Result> callbackMap;
 
     private ImLeancloudPlugin(Registrar registrar, MethodChannel channel) {
         this.registrar = registrar;
         this.channel = channel;
-        //this.callbackMap = new HashMap<>();
         instance = this;
     }
 
@@ -51,7 +53,7 @@ public class ImLeancloudPlugin implements MethodCallHandler {
                 LeancloudFunction.initialize(call, result, _applicationContext);
                 break;
             case "onLoginClick":
-                LeancloudFunction.onLoginClick((String) call.arguments);
+                LeancloudFunction.onLoginClick(call, result);
                 break;
             case "setLogLevel":
                 LeancloudFunction.setLogLevel(call, result);
@@ -74,37 +76,75 @@ public class ImLeancloudPlugin implements MethodCallHandler {
             case "queryUnreadMessages":
                 LeancloudMessage.queryUnreadMessages(call, result);
                 break;
+            case "queryHistoryMessages":
+                LeancloudMessage.queryHistoryMessages(call, result);
+                break;
             case "signoutClick":
                 LeancloudFunction.signoutClick();
                 break;
-
+            case "conversationList":
+                LeancloudMessage.conversationList(call, result);
+                break;
             default:
                 result.notImplemented();
         }
 
 
     }
-//传送消息
-    public void onReceiveMessage(String comversationId, String content, String getfrom) {
+
+    //传送消息
+    public void onReceiveMessage(AVIMTypedMessage message) {
 
         Map<String, Object> notification = new HashMap<>();
-        notification.put("conversationId", comversationId);
-        notification.put("content", content);
-        notification.put("getfrom", getfrom);
+        notification.put("conversationId", message.getConversationId());
+        notification.put("content", message.getContent());
+        notification.put("getfrom", message.getFrom());
+        notification.put("Timestamp",message.getTimestamp());
+        notification.put("MessageType",message.getMessageType());
         ImLeancloudPlugin.instance.channel.invokeMethod("onReceiveMessage", notification);
 
     }
+
     //unRead传送未读的会话以及数目
-    public void unRead(String comversationId, int unreadcount) {
-        Map<String, Object> unread = new HashMap<>();
-        unread.put("conversationId", comversationId);
-        unread.put("unreadcount", unreadcount);
-        System.out.println("unreadcount:"+unreadcount);
-        ImLeancloudPlugin.instance.channel.invokeMethod("unRead", unread);
+    public void unRead(AVIMConversation conv) {
+        Map<String, Object> convmap = new HashMap<>();
+        convmap.put("conversationId", conv.getConversationId());
+        convmap.put("UnreadMessagesCount", conv.getUnreadMessagesCount());
+        convmap.put("getMembers", conv.getMembers());
+        convmap.put("getName", conv.getName());
+        String jsonconversation = JSON.toJSONString(convmap);
+
+
+        Map<String, Object> unReadmap = new HashMap<>();
+        unReadmap.put("unRead", jsonconversation);
+        ImLeancloudPlugin.instance.channel.invokeMethod("unRead", unReadmap);
     }
 
+    //用于判断是否已读
+    public void onLastReadAtUpdated(AVIMConversation conv) {
+        Map<String, Object> convmap = new HashMap<>();
+        convmap.put("conversationId", conv.getConversationId());
+        convmap.put("getMembers", conv.getMembers());
+        convmap.put("LastReadAt", conv.getLastReadAt());
+        convmap.put("getName", conv.getName());
+        String jsonconversation = JSON.toJSONString(convmap);
 
+        Map<String, Object> LastReadAtmap = new HashMap<>();
+        LastReadAtmap.put("LastReadAt", jsonconversation);
+        ImLeancloudPlugin.instance.channel.invokeMethod("onLastReadAtUpdated", LastReadAtmap);
+    }
+//更新会话接收时间
+    public void onLastDeliveredAtUpdated(AVIMConversation conv) {
+        Map<String, Object> convmap = new HashMap<>();
+        convmap.put("conversationId", conv.getConversationId());
+        convmap.put("getMembers", conv.getMembers());
+        convmap.put("LastDelivered", conv.getLastDeliveredAt());
+        convmap.put("getName", conv.getName());
+        String jsonconversation = JSON.toJSONString(convmap);
 
-
+        Map<String, Object> LastDeliveredmap = new HashMap<>();
+        LastDeliveredmap.put("LastDeliveredAt", jsonconversation);
+        ImLeancloudPlugin.instance.channel.invokeMethod("onLastDeliveredAtUpdated", LastDeliveredmap);
+    }
 
 }

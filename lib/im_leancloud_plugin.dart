@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
@@ -45,12 +44,17 @@ class ImLeancloudPlugin {
     _channel.invokeMethod('initialize', args);
   }
 
-  void onLoginClick(String args) {
-    _channel.invokeMethod('onLoginClick', args);
+  Future<bool> onLoginClick(String args) async {
+    // bool isloginLcchat=await _channel.invokeMethod('onLoginClick', args);
+    // return isloginLcchat;
+
+    bool isloginLcchat=await _channel.invokeMethod('onLoginClick', args);
+    return isloginLcchat;
   }
 
-  Future<String> getConversation(String username) async {
+  Future<String> getConversation(String currentUser, String username) async {
     var args = <String, dynamic>{
+      'currentUser': currentUser,
       'username': username,
     };
     String conversationId =
@@ -58,7 +62,16 @@ class ImLeancloudPlugin {
     return conversationId;
   }
 
-  Future<String> sendText(String content, String conversationId)async{
+  Future<String> conversationList(String currentUser) async {
+    var args = <String, dynamic>{
+      'currentUser': currentUser,
+    };
+    String conversations =
+        await _channel.invokeMethod('conversationList', args);
+    return conversations;
+  }
+
+  Future<String> sendText(String content, String conversationId) async {
     var args = <String, dynamic>{
       'content': content,
       'conversationId': conversationId,
@@ -131,6 +144,19 @@ class ImLeancloudPlugin {
     return messages;
   }
 
+  Future<String> queryHistoryMessages(String conversationId, String messageId,
+      int Timestamp, int pageSize) async {
+    var args = <String, dynamic>{
+      'conversationId': conversationId,
+      'messageId': messageId,
+      'Timestamp': Timestamp,
+      'pageSize': pageSize,
+    };
+    String historymessages =
+        await _channel.invokeMethod('queryHistoryMessages', args);
+    return historymessages;
+  }
+
   Future<void> signoutClick() async {
     await _channel.invokeMethod('signoutClick');
   }
@@ -138,15 +164,21 @@ class ImLeancloudPlugin {
   EventHandler _onReceiveMessage;
   EventHandler _onConnectionResume;
   EventHandler _unRead;
+  EventHandler _onLastReadAtUpdated;
+  EventHandler _onLastDeliveredAtUpdated;
 
   void addEventHandler({
     EventHandler onReceiveMessage,
     EventHandler onConnectionResume,
     EventHandler unRead,
+    EventHandler onLastReadAtUpdated,
+    EventHandler onLastDeliveredAtUpdated,
   }) {
     _onReceiveMessage = onReceiveMessage;
     _onConnectionResume = onConnectionResume;
     _unRead = unRead;
+    _onLastReadAtUpdated = onLastReadAtUpdated;
+    _onLastDeliveredAtUpdated = onLastDeliveredAtUpdated;
   }
 
   Future<dynamic> _handler(MethodCall call) {
@@ -157,11 +189,16 @@ class ImLeancloudPlugin {
         return _onReceiveMessage(call.arguments.cast<String, dynamic>());
         break;
       case 'onConnectionResume':
-        return _onConnectionResume(call.arguments.cast<bool>());
+        return _onConnectionResume(call.arguments.cast<String, dynamic>());
         break;
       case 'unRead':
-        print("调用 ${call.method}");
         return _unRead(call.arguments.cast<String, dynamic>());
+        break;
+      case 'onLastReadAtUpdated':
+        return _onLastReadAtUpdated(call.arguments.cast<String, dynamic>());
+        break;
+      case 'onLastDeliveredAtUpdated':
+        return _onLastDeliveredAtUpdated(call.arguments.cast<String, dynamic>());
         break;
       default:
         print('没收到来自平台的方法');

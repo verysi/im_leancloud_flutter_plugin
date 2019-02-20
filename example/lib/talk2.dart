@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'sql/conversation.dart';
 import 'dart:convert';
 import 'dart:async';
-import 'sql/sqlconversation.dart';
-import 'sql/message.dart';
 import 'refresh_list_view.dart';
 import 'package:im_leancloud_plugin/im_leancloud_plugin.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'contact.dart';
+import 'custome_router.dart';
 
 class talk2 extends StatefulWidget {
   String conversationId;
@@ -22,6 +22,7 @@ class talk2 extends StatefulWidget {
 
 class talk2State extends State<talk2> {
   bool isLoading = true;
+  bool isMoreData = true;
   final TextEditingController textEditingController =
       new TextEditingController();
   final ScrollController listScrollController = new ScrollController();
@@ -29,7 +30,7 @@ class talk2State extends State<talk2> {
       StreamController<List<dynamic>>();
 
   final FocusNode focusNode = new FocusNode();
-  sqlConversation dbc = new sqlConversation();
+  ConversationSqlite dbc = new ConversationSqlite();
   bool isopendTalk;
   static List<dynamic> messages = [];
 
@@ -41,32 +42,65 @@ class talk2State extends State<talk2> {
     if (isconversationExist == false) {
       Conversation conversation =
           new Conversation(currentUser, conversationId, username);
-      int res = await dbc.saveConversation(conversation);
-      print('会话列表数：$res');
+      await dbc.insert(conversation);
     } else {
       print('会话已经存在');
     }
+    await dbc.close();
   }
 
   Future getConversationId(String username) async {
     ImLeancloudPlugin ImleancloudPlugin = ImLeancloudPlugin.getInstance();
-    String conversationId = await ImleancloudPlugin.getConversation(username);
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String currentUser = prefs.getString('currentUser');
+
+    String conversationId =
+        await ImleancloudPlugin.getConversation(currentUser, username);
     print(conversationId);
+  }
+
+  //更新LastDelivered
+  Future<void> updateLastDelivered(String jsonLastDelivered) async {
+    Map<String, dynamic> mapLastdelivered = json.decode(jsonLastDelivered);
+    String conversationId = mapLastdelivered['conversationId'];
+    int LastDelivered = mapLastdelivered['LastDelivered'];
+    await dbc.updateLastDelivered(conversationId, LastDelivered);
+    dbc.close();
   }
 
   Future<void> onReceiveMessage() async {
     ImLeancloudPlugin ImleancloudPlugin = ImLeancloudPlugin.getInstance();
     ImleancloudPlugin.addEventHandler(
       onReceiveMessage: (Map<String, dynamic> message) async {
-        steamlist();
+        print('这是talk文件传来的消息');
         if (widget.conversationId == message['conversationId'] && isopendTalk) {
+          steamlist();
           conversationRead();
         }
         String content = json.decode(message['content'])['_lctext'];
-        Message onReceiveMessage =
-            new Message(content, message['getfrom'], message['conversationId']);
         _showNotification(message['getfrom'], content);
         saveNewconversation(message['conversationId'], message['getfrom']);
+        await dbc.sequenceConversation(
+            message['conversationId'], message['Timestamp']);
+        dbc.close();
+      },
+      //网络状态重新连接
+      onConnectionResume: (isResume) async {
+        print(isResume);
+      },
+      //未读消息状态发生变化
+      unRead: (Map<String, dynamic> unreadmessage) async {
+        print(unreadmessage);
+      },
+      onLastReadAtUpdated: (Map<String, dynamic> lastreadat) async {
+        print('更新最后读取时间');
+        print(lastreadat);
+      },
+      onLastDeliveredAtUpdated: (Map<String, dynamic> lastdeliver) async {
+        print('更新接收时间');
+        print(lastdeliver);
+        String jsonLastDelivered = lastdeliver['LastDeliveredAt'];
+        updateLastDelivered(jsonLastDelivered);
       },
     );
   }
@@ -103,7 +137,7 @@ class talk2State extends State<talk2> {
       steamlist();
     }
     steamlist();
-    i = 1;
+    isMoreData = true;
   }
 
   void conversationRead() {
@@ -112,14 +146,18 @@ class talk2State extends State<talk2> {
   }
 
   Future<void> steamlist() async {
-    messages = await getMessage(1);
+    messages = await getMessage(10);
     _streamController.sink.add(messages);
+    await dbc.sequenceConversation(
+        messages[messages.length - 1]['conversationId'],
+        messages[messages.length - 1]['Timestamp']);
+   // dbc.close();
   }
 
-  Future<List<dynamic>> getMessage(int page) async {
+  Future<List<dynamic>> getMessage(int count) async {
     ImLeancloudPlugin ImleancloudPlugin = ImLeancloudPlugin.getInstance();
     String listmessages = await ImleancloudPlugin.queryUnreadMessages(
-        widget.conversationId, 10 * page);
+        widget.conversationId, count);
     print(listmessages);
     List<dynamic> mapmessages = json.decode(listmessages);
     if (mapmessages.length == 0) {
@@ -132,11 +170,12 @@ class talk2State extends State<talk2> {
     sendText(sendContent, widget.conversationId);
   }
 
-  Future<bool> onBackPress() async {
-    Navigator.pop(context);
+  Future<void> onBackPress() async {
     isopendTalk = false;
     messages = [];
-    return Future.value(false);
+    Navigator.of(context).pushReplacement(CustomeRout(contact(), -1.0));
+
+    //return Future.value(true);
   }
 
   Future<void> inittalk() async {
@@ -144,14 +183,34 @@ class talk2State extends State<talk2> {
     conversationRead();
   }
 
-  int i = 1;
+//查看消息历史记录
   Future<void> _refresh() async {
-    if (messages.length < i * 10) {
+    ImLeancloudPlugin ImleancloudPlugin = ImLeancloudPlugin.getInstance();
+    String jsonhistorymessages;
+    List<dynamic> historymessages;
+
+    if (messages.length < 10) {
       print('已经拉到最顶');
     } else {
-      i = i + 2; //下拉加载20条数据
-      messages = await getMessage(i);
-      _streamController.sink.add(messages);
+      if (isMoreData) {
+        jsonhistorymessages = await ImleancloudPlugin.queryHistoryMessages(
+            widget.conversationId,
+            messages[0]['MessageId'],
+            messages[0]['Timestamp'],
+            20);
+        historymessages = json.decode(jsonhistorymessages);
+        if (historymessages.length < 20) {
+          isMoreData = false;
+        } else {
+          isMoreData = true;
+        }
+        historymessages.addAll(messages);
+        messages = historymessages;
+        //下拉加载20条数据
+        _streamController.sink.add(messages);
+      } else {
+        print('已经拉到最顶');
+      }
     }
   }
 
@@ -174,6 +233,11 @@ class talk2State extends State<talk2> {
     return new Scaffold(
       appBar: new AppBar(
         title: new Text(widget.username),
+        leading: IconButton(
+            icon: Icon(Icons.arrow_back),
+            onPressed: () {
+              onBackPress();
+            }),
       ),
       body: WillPopScope(
         child: Stack(
@@ -275,7 +339,7 @@ class talk2State extends State<talk2> {
       height: 50.0,
       decoration: new BoxDecoration(
           border: new Border(
-              top: new BorderSide(color: Colors.black54, width: 0.5)),
+              top: new BorderSide(color: Colors.black12, width: 0.5)),
           color: Colors.white),
     );
   }
@@ -361,7 +425,5 @@ class talk2State extends State<talk2> {
         ),
       ),
     );
-    //Text('${detail['content']}');
-    //.....
   }
 }

@@ -5,7 +5,6 @@ import 'dart:convert';
 import 'dart:async';
 import 'sql/sql.dart';
 import 'sql/message.dart';
-import 'sql/sqlconversation.dart';
 import 'package:im_leancloud_plugin/im_leancloud_plugin.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -28,7 +27,7 @@ class talkState extends State<talk> {
   List<String> contents = List<String>();
   final FocusNode focusNode = new FocusNode();
   sql db = new sql();
-  sqlConversation dbc = new sqlConversation();
+  ConversationSqlite dbc = new ConversationSqlite();
   List<Message> messages;
   bool isopendTalk;
 
@@ -40,8 +39,7 @@ class talkState extends State<talk> {
     if (isconversationExist == false) {
       Conversation conversation =
           new Conversation(currentUser, conversationId, username);
-      int res = await dbc.saveConversation(conversation);
-      print('会话列表数：$res');
+      await dbc.insert(conversation);
     } else {
       print('会话已经存在');
     }
@@ -49,7 +47,10 @@ class talkState extends State<talk> {
 
   Future getConversationId(String username) async {
     ImLeancloudPlugin ImleancloudPlugin = ImLeancloudPlugin.getInstance();
-    String conversationId = await ImleancloudPlugin.getConversation(username);
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String currentUser = prefs.getString('currentUser');
+    String conversationId =
+        await ImleancloudPlugin.getConversation(currentUser, username);
     print(conversationId);
   }
 

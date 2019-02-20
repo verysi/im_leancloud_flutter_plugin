@@ -2,17 +2,23 @@ package com.sisi.imleancloudplugin.handler;
 
 import com.avos.avoscloud.im.v2.AVIMClient;
 import com.avos.avoscloud.im.v2.AVIMClientEventHandler;
+import com.avos.avoscloud.PushService;
 
 import com.sisi.imleancloudplugin.ImLeancloudPlugin;
 import com.sisi.imleancloudplugin.event.LCIMConnectionChangeEvent;
 import com.sisi.imleancloudplugin.utils.LCIMLogUtils;
 import de.greenrobot.event.EventBus;
 
+
 /**
  * Created by wli on 15/12/16.
  * 与网络相关的 handler
  * 注意，此 handler 并不是网络状态通知，而是当前 client 的连接状态
+ *
+ *
  */
+
+
 public class LCIMClientEventHandler extends AVIMClientEventHandler {
 
   private static LCIMClientEventHandler eventHandler;

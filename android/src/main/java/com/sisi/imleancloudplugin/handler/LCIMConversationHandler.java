@@ -13,7 +13,6 @@ import com.sisi.imleancloudplugin.cache.LCIMConversationItemCache;
 import com.sisi.imleancloudplugin.event.LCIMConversationReadStatusEvent;
 
 
-
 /**
  * Created by wli on 15/12/1.
  * 和 Conversation 相关的事件的 handler
@@ -22,72 +21,79 @@ import com.sisi.imleancloudplugin.event.LCIMConversationReadStatusEvent;
  */
 public class LCIMConversationHandler extends AVIMConversationEventHandler {
 
-  private static LCIMConversationHandler eventHandler;
+    private static LCIMConversationHandler eventHandler;
 
-  public static synchronized LCIMConversationHandler getInstance() {
-    if (null == eventHandler) {
-      eventHandler = new LCIMConversationHandler();
+    public static synchronized LCIMConversationHandler getInstance() {
+        if (null == eventHandler) {
+            eventHandler = new LCIMConversationHandler();
+        }
+        return eventHandler;
     }
-    return eventHandler;
-  }
 
-  private LCIMConversationHandler() {
-  }
+    private LCIMConversationHandler() {
+    }
 
-  @Override
-  public void onUnreadMessagesCountUpdated(AVIMClient client, AVIMConversation conversation) {
-    LCIMConversationItemCache.getInstance().insertConversation(conversation.getConversationId());
-    AVIMMessage lastMessage = conversation.getLastMessage();
-    System.out.println("LCIMConversationHandler#onUnreadMessagesCountUpdated conv=" + conversation.getConversationId() + ", lastMsg: " + lastMessage.getContent());
-    final int unreadcount= conversation.getUnreadMessagesCount();
-    final String imConversationId=conversation.getConversationId();
-    ImLeancloudPlugin.instance.unRead(imConversationId,unreadcount);
-  }
+    @Override
+    public void onUnreadMessagesCountUpdated(AVIMClient client, AVIMConversation conversation) {
+        LCIMConversationItemCache.getInstance().insertConversation(conversation.getConversationId());
+        AVIMMessage lastMessage = conversation.getLastMessage();
+        System.out.println("LCIMConversationHandler#onUnreadMessagesCountUpdated conv=" + conversation.getConversationId() + ", lastMsg: " + lastMessage.getContent());
+        System.out.println(lastMessage.getContent());
+        ImLeancloudPlugin.instance.unRead(conversation);
+    }
 
-  @Override
-  public void onLastDeliveredAtUpdated(AVIMClient client, AVIMConversation conversation) {
-    LCIMConversationReadStatusEvent event = new LCIMConversationReadStatusEvent();
-    event.conversationId = conversation.getConversationId();
+    @Override
+    public void onLastDeliveredAtUpdated(AVIMClient client, AVIMConversation conversation) {
+        System.out.println("onLastDeliveredAtUpdated");
+        System.out.println(conversation.getConversationId());
+        System.out.println(conversation.getName());
+        System.out.println(conversation.getMembers());
+        ImLeancloudPlugin.instance.onLastDeliveredAtUpdated(conversation);
+        //LCIMConversationReadStatusEvent event = new LCIMConversationReadStatusEvent();
+       // event.conversationId = conversation.getConversationId();
+    }
 
-  }
-
-  @Override
-  public void onLastReadAtUpdated(AVIMClient client, AVIMConversation conversation) {
-
-
-    System.out.println(conversation.getLastReadAt());
-    LCIMConversationReadStatusEvent event = new LCIMConversationReadStatusEvent();
-    event.conversationId = conversation.getConversationId();
-
+    @Override
+    public void onLastReadAtUpdated(AVIMClient client, AVIMConversation conversation) {
+        System.out.println("onLastReadAtUpdated");
+        System.out.println(conversation.getLastReadAt());
+        System.out.println(conversation.getConversationId());
+        System.out.println(conversation.getName());
+        System.out.println(conversation.getMembers());
+        ImLeancloudPlugin.instance.onLastReadAtUpdated(conversation);
 
 
-  }
+       // LCIMConversationReadStatusEvent event = new LCIMConversationReadStatusEvent();
+      //  event.conversationId = conversation.getConversationId();
 
-  @Override
-  public void onMemberLeft(AVIMClient client, AVIMConversation conversation, List<String> members, String kickedBy) {
-    // 因为不同用户需求不同，此处暂不做默认处理，如有需要，用户可以通过自定义 Handler 实现
-  }
 
-  @Override
-  public void onMemberJoined(AVIMClient client, AVIMConversation conversation, List<String> members, String invitedBy) {
-  }
+    }
 
-  @Override
-  public void onKicked(AVIMClient client, AVIMConversation conversation, String kickedBy) {
-  }
+    @Override
+    public void onMemberLeft(AVIMClient client, AVIMConversation conversation, List<String> members, String kickedBy) {
+        // 因为不同用户需求不同，此处暂不做默认处理，如有需要，用户可以通过自定义 Handler 实现
+    }
 
-  @Override
-  public void onInvited(AVIMClient client, AVIMConversation conversation, String operator) {
-  }
+    @Override
+    public void onMemberJoined(AVIMClient client, AVIMConversation conversation, List<String> members, String invitedBy) {
+    }
 
-  @Override
-  public void onMessageRecalled(AVIMClient client, AVIMConversation conversation, AVIMMessage message) {
+    @Override
+    public void onKicked(AVIMClient client, AVIMConversation conversation, String kickedBy) {
+    }
 
-  }
+    @Override
+    public void onInvited(AVIMClient client, AVIMConversation conversation, String operator) {
+    }
 
-  @Override
-  public void onMessageUpdated(AVIMClient client, AVIMConversation conversation, AVIMMessage message) {
+    @Override
+    public void onMessageRecalled(AVIMClient client, AVIMConversation conversation, AVIMMessage message) {
 
-  }
+    }
+
+    @Override
+    public void onMessageUpdated(AVIMClient client, AVIMConversation conversation, AVIMMessage message) {
+
+    }
 
 }

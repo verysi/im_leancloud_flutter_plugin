@@ -21,6 +21,7 @@ import io.flutter.plugin.common.MethodChannel;
 
 class LeancloudFunction {
 
+
     static void initialize(MethodCall call, MethodChannel.Result result, Context context) {
         LCChatKit.getInstance().setProfileProvider(CustomUserProvider.getInstance());
         AVOSCloud.setDebugLogEnabled(true);
@@ -81,17 +82,19 @@ class LeancloudFunction {
         AVOSCloud.setLogLevel(level);
     }
 
-    static void onLoginClick(String clientId) {
+    static void onLoginClick(MethodCall call, final MethodChannel.Result result) {
+        String clientId = (String) call.arguments;
         LCChatKit.getInstance().open(clientId, new AVIMClientCallback() {
             @Override
             public void done(AVIMClient avimClient, AVIMException e) {
                 if (null == e) {
                     System.out.println("帐号登陆即时通讯成功");
+                   result.success(true);
 
 
                 } else {
                     System.out.println("帐号登陆即时通讯失败");
-
+                   result.success(false);
                 }
             }
         });

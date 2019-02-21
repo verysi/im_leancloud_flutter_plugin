@@ -95,7 +95,7 @@ class Conversation {
 class ConversationSqlite {
   Database db;
   static List<String> conversationList = [];
-  static List<Map<String, dynamic>> convmaps;
+  static List<Map<String, dynamic>> convmaps=[];
   openSqlite() async {
     // 获取数据库文件的存储路径
     var databasesPath = await getDatabasesPath();

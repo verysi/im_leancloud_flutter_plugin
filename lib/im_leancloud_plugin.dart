@@ -48,7 +48,7 @@ class ImLeancloudPlugin {
     // bool isloginLcchat=await _channel.invokeMethod('onLoginClick', args);
     // return isloginLcchat;
 
-    bool isloginLcchat=await _channel.invokeMethod('onLoginClick', args);
+    bool isloginLcchat = await _channel.invokeMethod('onLoginClick', args);
     return isloginLcchat;
   }
 
@@ -71,31 +71,46 @@ class ImLeancloudPlugin {
     return conversations;
   }
 
+  //消息发送成功，返回'sendsuccess',失败返回'sendfalse'
   Future<String> sendText(String content, String conversationId) async {
     var args = <String, dynamic>{
       'content': content,
       'conversationId': conversationId,
     };
     String sendresult = await _channel.invokeMethod('sendText', args);
+    print('sendresult:$sendresult');
     return sendresult;
   }
 
-  void sendImage(String imagePath, String conversationId) {
+  Future<String> sendImage(String imagePath, String conversationId) async {
     var args = <String, dynamic>{
       'imagePath': imagePath,
       'conversationId': conversationId,
     };
 
-    _channel.invokeMethod('sendImage', args);
+    String sendresult = await _channel.invokeMethod('sendImage', args);
+    print('sendresult:$sendresult');
+    return sendresult;
   }
 
-  void sendAudio(String audioPath, String conversationId) {
+  Future<String> sendAudio(String audioPath, String conversationId) async {
     var args = <String, dynamic>{
       'audioPath': audioPath,
       'conversationId': conversationId,
     };
 
-    _channel.invokeMethod('sendAudio', args);
+    String sendresult = await _channel.invokeMethod('sendAudio', args);
+    return sendresult;
+  }
+
+  Future<String> sendVideo(String videoPath, String conversationId) async {
+    var args = <String, dynamic>{
+      'audioPath': videoPath,
+      'conversationId': conversationId,
+    };
+
+    String sendresult = await _channel.invokeMethod('sendVideo', args);
+    return sendresult;
   }
 
   void conversationRead() {
@@ -198,10 +213,11 @@ class ImLeancloudPlugin {
         return _onLastReadAtUpdated(call.arguments.cast<String, dynamic>());
         break;
       case 'onLastDeliveredAtUpdated':
-        return _onLastDeliveredAtUpdated(call.arguments.cast<String, dynamic>());
+        return _onLastDeliveredAtUpdated(
+            call.arguments.cast<String, dynamic>());
         break;
       default:
-        print('没收到来自平台的方法');
+        print('没收到来自平台的回调');
     }
   }
 }

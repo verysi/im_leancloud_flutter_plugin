@@ -70,6 +70,9 @@ public class ImLeancloudPlugin implements MethodCallHandler {
             case "sendAudio":
                 LeancloudMessage.sendAudio(call, result);
                 break;
+            case "sendVideo":
+                LeancloudMessage.sendVideo(call, result);
+                break;
             case "conversationRead":
                 LeancloudMessage.conversationRead();
                 break;
@@ -92,7 +95,7 @@ public class ImLeancloudPlugin implements MethodCallHandler {
 
     }
 
-    //传送消息
+    //接收消息
     public void onReceiveMessage(AVIMTypedMessage message) {
 
         Map<String, Object> notification = new HashMap<>();

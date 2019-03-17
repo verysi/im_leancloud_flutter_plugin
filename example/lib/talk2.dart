@@ -49,7 +49,7 @@ class talk2State extends State<talk2> {
     await dbc.close();
   }
 
-  Future getConversationId(String username) async {
+  Future<void> getConversationId(String username) async {
     ImLeancloudPlugin ImleancloudPlugin = ImLeancloudPlugin.getInstance();
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String currentUser = prefs.getString('currentUser');
@@ -105,7 +105,7 @@ class talk2State extends State<talk2> {
     );
   }
 
-  Future _showNotification(String getfrom, String content) async {
+  Future<void> _showNotification(String getfrom, String content) async {
     var flutterLocalNotificationsPlugin = new FlutterLocalNotificationsPlugin();
     var androidPlatformChannelSpecifics = new AndroidNotificationDetails(
         'your channel id', 'your channel name', 'your channel description',
@@ -151,7 +151,7 @@ class talk2State extends State<talk2> {
     await dbc.sequenceConversation(
         messages[messages.length - 1]['conversationId'],
         messages[messages.length - 1]['Timestamp']);
-   // dbc.close();
+    // dbc.close();
   }
 
   Future<List<dynamic>> getMessage(int count) async {
@@ -170,7 +170,7 @@ class talk2State extends State<talk2> {
     sendText(sendContent, widget.conversationId);
   }
 
-  Future<void> onBackPress() async {
+  Future<bool> onBackPress() async {
     isopendTalk = false;
     messages = [];
     Navigator.of(context).pushReplacement(CustomeRout(contact(), -1.0));

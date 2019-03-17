@@ -24,6 +24,7 @@ import com.avos.avoscloud.im.v2.callback.AVIMMessagesQueryCallback;
 import com.avos.avoscloud.im.v2.messages.AVIMAudioMessage;
 import com.avos.avoscloud.im.v2.messages.AVIMImageMessage;
 import com.avos.avoscloud.im.v2.messages.AVIMTextMessage;
+import com.avos.avoscloud.im.v2.messages.AVIMVideoMessage;
 import com.sisi.imleancloudplugin.cache.LCIMConversationItemCache;
 import com.sisi.imleancloudplugin.utils.LCIMConversationUtils;
 import com.sisi.imleancloudplugin.utils.LCIMLogUtils;
@@ -43,7 +44,7 @@ import io.flutter.plugin.common.MethodChannel;
 public class LeancloudMessage {
     protected static AVIMConversation imConversation;
     private static LeancloudMessage leancloudmessage;
-   // private static AVIMMessage oldmessage;
+    // private static AVIMMessage oldmessage;
 
     private LeancloudMessage() {
 
@@ -306,6 +307,24 @@ public class LeancloudMessage {
         }
     }
 
+
+    /**
+     * 发送视频消息
+     *
+     * @param
+     */
+    static void sendVideo(MethodCall call, MethodChannel.Result result) {
+        String videoPath = LeancloudArgsConverter.getStringValue(call, result, "videoPath");
+        String conversationId = LeancloudArgsConverter.getStringValue(call, result, "conversationId");
+        try {
+            AVIMVideoMessage videoMessage = new AVIMVideoMessage(videoPath);
+            sendMessage(videoMessage, conversationId, result);
+        } catch (IOException e) {
+            LCIMLogUtils.logException(e);
+        }
+    }
+
+
     static void sendMessage(AVIMMessage message, String conversationId, MethodChannel.Result result) {
         sendMessage(message, true, conversationId, result);
     }
@@ -329,7 +348,7 @@ public class LeancloudMessage {
                 if (null != e) {
                     LCIMLogUtils.logException(e);
                     System.out.println("消息发送失败");
-                    result.success("sendfail");
+                    result.success("sendfalse");
                 }
             }
         });

@@ -12,6 +12,11 @@
       <excludeFolder url="file://$MODULE_DIR$/example/.idea/packages" />
       <excludeFolder url="file://$MODULE_DIR$/example/.idea/runConfigurations/packages" />
       <excludeFolder url="file://$MODULE_DIR$/example/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/example/android/.gradle/4.10.1/fileChanges/packages" />
+      <excludeFolder url="file://$MODULE_DIR$/example/android/.gradle/4.10.1/fileHashes/packages" />
+      <excludeFolder url="file://$MODULE_DIR$/example/android/.gradle/4.10.1/packages" />
+      <excludeFolder url="file://$MODULE_DIR$/example/android/.gradle/4.10.1/taskHistory/packages" />
+      <excludeFolder url="file://$MODULE_DIR$/example/android/.gradle/4.10.1/vcsMetadata-1/packages" />
       <excludeFolder url="file://$MODULE_DIR$/example/android/.gradle/4.10.2/fileChanges/packages" />
       <excludeFolder url="file://$MODULE_DIR$/example/android/.gradle/4.10.2/fileContent/packages" />
       <excludeFolder url="file://$MODULE_DIR$/example/android/.gradle/4.10.2/fileHashes/packages" />
@@ -40,11 +45,15 @@
       <excludeFolder url="file://$MODULE_DIR$/example/android/app/src/main/res/mipmap-xxhdpi/packages" />
       <excludeFolder url="file://$MODULE_DIR$/example/android/app/src/main/res/mipmap-xxxhdpi/packages" />
       <excludeFolder url="file://$MODULE_DIR$/example/android/app/src/main/res/packages" />
+      <excludeFolder url="file://$MODULE_DIR$/example/android/app/src/main/res/raw/packages" />
       <excludeFolder url="file://$MODULE_DIR$/example/android/app/src/main/res/values/packages" />
       <excludeFolder url="file://$MODULE_DIR$/example/android/app/src/packages" />
       <excludeFolder url="file://$MODULE_DIR$/example/android/gradle/packages" />
       <excludeFolder url="file://$MODULE_DIR$/example/android/gradle/wrapper/packages" />
       <excludeFolder url="file://$MODULE_DIR$/example/android/packages" />
+      <excludeFolder url="file://$MODULE_DIR$/example/assets/images/packages" />
+      <excludeFolder url="file://$MODULE_DIR$/example/assets/packages" />
+      <excludeFolder url="file://$MODULE_DIR$/example/assets/ttf/packages" />
       <excludeFolder url="file://$MODULE_DIR$/example/build" />
       <excludeFolder url="file://$MODULE_DIR$/example/ios/Flutter/packages" />
       <excludeFolder url="file://$MODULE_DIR$/example/ios/Runner.xcodeproj/packages" />
@@ -59,6 +68,8 @@
       <excludeFolder url="file://$MODULE_DIR$/example/ios/Runner/packages" />
       <excludeFolder url="file://$MODULE_DIR$/example/ios/packages" />
       <excludeFolder url="file://$MODULE_DIR$/example/lib/packages" />
+      <excludeFolder url="file://$MODULE_DIR$/example/lib/sql/packages" />
+      <excludeFolder url="file://$MODULE_DIR$/example/lib/test/packages" />
       <excludeFolder url="file://$MODULE_DIR$/example/packages" />
       <excludeFolder url="file://$MODULE_DIR$/example/test/packages" />
       <excludeFolder url="file://$MODULE_DIR$/packages" />

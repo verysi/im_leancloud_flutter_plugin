@@ -5,8 +5,11 @@ package com.sisi.imleancloudplugin;
  */
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 
 import com.avos.avoscloud.AVException;
+import com.avos.avoscloud.AVFile;
 import com.avos.avoscloud.AVInstallation;
 import com.avos.avoscloud.AVLogger;
 import com.avos.avoscloud.AVOSCloud;
@@ -110,6 +113,31 @@ class LeancloudFunction {
                 }
             }
         });
+    }
+    
+    static void uploadFile(MethodCall call, final MethodChannel.Result result) {
+        final String path = LeancloudArgsConverter.getStringValue(call, result, "filePath");
+        String fileName = LeancloudArgsConverter.getStringValue(call, result, "fileName");
+        try {
+          final AVFile LcFile = AVFile.withAbsoluteLocalPath(fileName, path);//fileName文件名要有后缀名
+            System.out.println(LcFile.getSize() + "");
+            LcFile.saveInBackground(new SaveCallback() {
+                @Override
+                public void done(AVException e) {
+                    if (e == null) {
+                        System.out.println("保存成功");
+                        result.success(LcFile.getObjectId());
+                    } else {
+                        System.out.println("保存失败: " + e.getMessage());
+                        result.notImplemented();
+                    }
+                }
+            });
+
+        } catch (Exception e) {
+            System.out.println("保存失败：" + e.getMessage());
+            result.notImplemented();
+        }
     }
 
 

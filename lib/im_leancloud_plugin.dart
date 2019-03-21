@@ -51,6 +51,17 @@ class ImLeancloudPlugin {
     bool isloginLcchat = await _channel.invokeMethod('onLoginClick', args);
     return isloginLcchat;
   }
+  //上传文件，文件名fileName需加上后缀名
+    Future<String> uploadFile(String filePath, String fileName) async {
+    var args = <String, dynamic>{
+      'filePath': filePath,
+      'fileName': fileName,
+    };
+    String fileId =
+    await _channel.invokeMethod('uploadFile', args);
+    print('fileId:$fileId');
+    return fileId;
+  }
 
   Future<String> getConversation(String currentUser, String username) async {
     var args = <String, dynamic>{

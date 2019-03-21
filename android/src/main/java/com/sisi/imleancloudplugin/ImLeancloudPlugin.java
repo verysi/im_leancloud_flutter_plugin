@@ -58,6 +58,9 @@ public class ImLeancloudPlugin implements MethodCallHandler {
             case "setLogLevel":
                 LeancloudFunction.setLogLevel(call, result);
                 break;
+            case "uploadFile":
+                LeancloudFunction.uploadFile(call, result);
+                break;
             case "getConversation":
                 LeancloudMessage.getConversation(call, result);
                 break;
